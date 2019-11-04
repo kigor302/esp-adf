@@ -94,6 +94,8 @@ typedef enum {
     AUDIO_HAL_32K_SAMPLES,   /*!< set to 32k samples in per second */
     AUDIO_HAL_44K_SAMPLES,   /*!< set to 44.1k samples per second */
     AUDIO_HAL_48K_SAMPLES,   /*!< set to 48k samples per second */
+    AUDIO_HAL_96K_SAMPLES,   /*!< set to 96k samples per second */
+    AUDIO_HAL_192K_SAMPLES   /*!< set to 192k samples per second */
 } audio_hal_iface_samples_t;
 
 /**
