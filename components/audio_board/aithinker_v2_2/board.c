@@ -82,8 +82,8 @@ esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
 {
     periph_button_cfg_t btn_cfg = {
         .gpio_mask = (1ULL << get_input_rec_id())   | (1ULL << get_input_mode_id()) |   // REC BTN & MODE BTN
-                     (1ULL << get_input_set_id())   | (1ULL << get_input_play_id()) |   // SET & PLAY
-                     (1ULL << get_input_volup_id()) | (1ULL << get_input_voldown_id())  // VLOUME + & VOLUME -
+                     (1ULL << get_input_set_id())   /*| (1ULL << get_input_play_id()) |   // SET & PLAY
+                     (1ULL << get_input_volup_id()) | (1ULL << get_input_voldown_id())*/  // VLOUME + & VOLUME -
     };
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
     AUDIO_NULL_CHECK(TAG, button_handle, return ESP_ERR_ADF_MEMORY_LACK);

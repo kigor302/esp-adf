@@ -143,6 +143,7 @@ int8_t get_input_set_id(void)
     return BUTTON_SET_ID;
 }
 
+/*
 int8_t get_input_play_id(void)
 {
     return BUTTON_PLAY_ID;
@@ -157,6 +158,7 @@ int8_t get_input_voldown_id(void)
 {
     return BUTTON_VOLDOWN_ID;
 }
+*/
 
 // led pins
 

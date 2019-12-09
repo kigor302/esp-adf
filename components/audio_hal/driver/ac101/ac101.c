@@ -47,7 +47,9 @@ audio_hal_func_t AUDIO_CODEC_AC101_DEFAULT_HANDLE = {
     .audio_codec_config_iface = ac101_config_i2s,
     .audio_codec_set_mute = ac101_set_voice_mute,
     .audio_codec_set_volume = ac101_set_voice_volume,
-    .audio_codec_get_volume = ac101_get_voice_volume
+    .audio_codec_get_volume = ac101_get_voice_volume,
+    .audio_codec_set_recvolume = ac101_set_recvoice_volume,
+    .audio_codec_get_recvolume = ac101_get_recvoice_volume
 };
 
 
@@ -263,8 +265,16 @@ esp_err_t ac101_start(ac_module_t mode)
     if (mode == AC_MODULE_LINE) {
 		res |= ac_write_reg(ADC_SRC /*0x51*/, 0x0408); //select ADC source LineInL and LineInR
 		res |= ac_write_reg(ADC_DIG_CTRL /*0x40*/, 0x8000); //Enable ADC digital side
-		res |= ac_write_reg(ADC_APC_CTRL /*0x50*/, 0x3bc0); // Enable ADC left channel 0Db gain + microphone bias
+		res |= ac_write_reg(ADC_APC_CTRL, 0xbb00);    /* ADCR/L channels=en, input gain = 0db, bias+chopper=dis  */
     }
+    else if (mode == AC_MODULE_ADC)
+    {
+		res |= ac_write_reg(ADC_SRCBST_CTRL, 0xccc4); /* mic1/2 amp and boost = en, gain=0db */  
+		res |= ac_write_reg(ADC_SRC, 0x2020);         /* right ADC=Mic1, left=Mic2 */
+		res |= ac_write_reg(ADC_DIG_CTRL, 0x8000);    /* ADC digital = en */
+		res |= ac_write_reg(ADC_APC_CTRL, 0xbbc3);    /* ADCR/L channels=en, input gain = 0db, bias+chopper=en  */
+    }
+
     if (mode == AC_MODULE_ADC || mode == AC_MODULE_ADC_DAC || mode == AC_MODULE_LINE) {
 		//I2S1_SDOUT_CTRL
 		//res |= ac_write_reg(PLL_CTRL2, 0x8120);
@@ -303,6 +313,7 @@ esp_err_t ac101_deinit(void)
 esp_err_t ac101_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_state)
 {
 	int ac_mode;
+	esp_err_t res = 0;
 
 	switch (mode) {
 		case AUDIO_HAL_CODEC_MODE_ENCODE:
@@ -317,6 +328,14 @@ esp_err_t ac101_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_st
 		case AUDIO_HAL_CODEC_MODE_BOTH:
 			ac_mode  = AC_MODULE_ADC_DAC;
 			break;
+		case AUDIO_HAL_CODEC_MODE_PASSTHROUGH:
+			{
+			uint16_t regval_src  = (ac_read_reg(DAC_MXR_SRC) & 0xcc00) | ((ctrl_state == AUDIO_HAL_CTRL_STOP)?0:0x1100);
+			uint16_t regval_gain = (ac_read_reg(DAC_MXR_SRC) & 0xcc00) | ((ctrl_state == AUDIO_HAL_CTRL_STOP)?0:0x1100);
+			res |= ac_write_reg(DAC_MXR_SRC, regval_src); /* Monitor Mix line-in to output */
+			res |= ac_write_reg(DAC_MXR_GAIN, regval_gain); /* Monitor Set line-in mix gain to -6 db */
+			}
+			return res;
 		default:
 			ac_mode = AC_MODULE_DAC;
 			ESP_LOGW(AC101_TAG, "Codec mode not support, default is decode mode");
@@ -392,6 +411,25 @@ esp_err_t ac101_set_voice_volume(int volume)
 esp_err_t ac101_get_voice_volume(int* volume)
 {
 	*volume = ac101_get_earph_volume();
+	return 0;
+}
+
+esp_err_t ac101_set_recvoice_volume(int volume)
+{
+	if (volume > 100)
+		volume = 100;
+	if (volume < 0)
+		volume = 0;
+
+	uint16_t regval = ac_read_reg(ADC_APC_CTRL) & (~0x7700);
+	uint16_t val = (((uint8_t)volume+7)/14);
+	return ac_write_reg(ADC_APC_CTRL, regval | (val<<8) | (val<<12));
+}
+
+esp_err_t ac101_get_recvoice_volume(int* volume)
+{
+	uint16_t regval = ac_read_reg(ADC_APC_CTRL) & 0x7700;
+	*volume = ((regval>>8) & 0x7) * 14;
 	return 0;
 }
 

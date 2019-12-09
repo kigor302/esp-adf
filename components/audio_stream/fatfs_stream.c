@@ -157,13 +157,25 @@ static int _fatfs_read(audio_element_handle_t self, char *buffer, int len, TickT
     audio_element_getinfo(self, &info);
 
     ESP_LOGD(TAG, "read len=%d, pos=%d/%d", len, (int)info.byte_pos, (int)info.total_bytes);
-    int rlen = fread(buffer, 1, len, fatfs->file);
+
+    /* IGOR ------------------ */   
+   int64_t start = esp_timer_get_time( );
+
+   int rlen = fread(buffer, 1, len, fatfs->file);
     if (rlen <= 0) {
         ESP_LOGW(TAG, "No more data,ret:%d", rlen);
     } else {
         info.byte_pos += rlen;
         audio_element_setinfo(self, &info);
     }
+    int64_t end = esp_timer_get_time( );
+    if ( (end - start) > 50000 )
+    {
+        ESP_LOGE(TAG, "! read took :%d usec", (int)(end - start));
+    }
+    /*----------------------- */
+
+
     return rlen;
 }
 
@@ -172,8 +184,20 @@ static int _fatfs_write(audio_element_handle_t self, char *buffer, int len, Tick
     fatfs_stream_t *fatfs = (fatfs_stream_t *)audio_element_getdata(self);
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
+
+    /* IGOR ------------------ */
+    int64_t start = esp_timer_get_time( );
+
     int wlen =  fwrite(buffer, 1, len, fatfs->file);
     fsync(fileno(fatfs->file));
+    
+    int64_t end = esp_timer_get_time( );
+    if ( (end - start) > 50000 )
+    {
+        ESP_LOGE(TAG, "!!! write took :%d usec", (int)(end - start));
+    }
+    /*----------------------- */
+
     ESP_LOGD(TAG, "write,%d, errno:%d,pos:%d", wlen, errno, (int)info.byte_pos);
     if (wlen > 0) {
         info.byte_pos += wlen;

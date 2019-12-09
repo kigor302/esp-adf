@@ -45,6 +45,8 @@ typedef enum {
     AUDIO_HAL_CODEC_MODE_DECODE,      /*!< select dac */
     AUDIO_HAL_CODEC_MODE_BOTH,        /*!< select both adc and dac */
     AUDIO_HAL_CODEC_MODE_LINE_IN,     /*!< set adc channel */
+    AUDIO_HAL_CODEC_MODE_PASSTHROUGH, /*!< set adc channel */
+
 } audio_hal_codec_mode_t;
 
 /**
@@ -148,6 +150,8 @@ typedef struct audio_hal {
     esp_err_t (*audio_codec_set_mute) (bool mute);                                                           /*!< set codec mute */
     esp_err_t (*audio_codec_set_volume)(int volume);                                                         /*!< set codec volume */
     esp_err_t (*audio_codec_get_volume)(int *volume);                                                        /*!< get codec volume */
+    esp_err_t (*audio_codec_set_recvolume)(int volume);                                                         /*!< set codec volume */
+    esp_err_t (*audio_codec_get_recvolume)(int *volume);                                                        /*!< get codec volume */
     xSemaphoreHandle audio_hal_lock;                                                                         /*!< semaphore of codec */
     void *handle;                                                                                            /*!< handle of audio codec */
 } audio_hal_func_t;
@@ -231,6 +235,27 @@ esp_err_t audio_hal_set_volume(audio_hal_handle_t audio_hal, int volume);
  */
 esp_err_t audio_hal_get_volume(audio_hal_handle_t audio_hal, int *volume);
 
+/**
+ * @brief Set record voice volume.
+ *        @note if volume is 0, mute is enabled,range is 0-100.
+ *
+ * @param audio_hal reference function pointer for selected audio codec
+ * @param volume value of volume in percent(%)
+ *
+ * @return     int, 0--success, others--fail
+ */
+esp_err_t audio_hal_set_recvolume(audio_hal_handle_t audio_hal, int volume);
+
+/**
+ * @brief get record voice volume.
+ *        @note if volume is 0, mute is enabled, range is 0-100.
+ *
+ * @param audio_hal reference function pointer for selected audio codec
+ * @param volume value of volume in percent returned(%)
+ *
+ * @return     int, 0--success, others--fail
+ */
+esp_err_t audio_hal_get_recvolume(audio_hal_handle_t audio_hal, int *volume);
 
 #ifdef __cplusplus
 }

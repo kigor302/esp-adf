@@ -57,11 +57,19 @@ esp_err_t sdcard_mount(const char *base_path)
 {
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
     // To use 1-line SD mode, uncomment the following line:
-    host.flags = SDMMC_HOST_FLAG_1BIT;
+    
+    /* !!!!!! IGOR !!!!! */ 
+    host.flags = /*SDMMC_HOST_FLAG_1BIT;*/ SDMMC_HOST_FLAG_4BIT;
+    /*!!!!!!!!!!*/
+
     host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
     slot_config.gpio_cd = g_gpio;
+    
+    /* !!!!!! IGOR
     slot_config.width = 1;
+     !!!!!!!*/
+
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files = get_sdcard_open_file_num_max()

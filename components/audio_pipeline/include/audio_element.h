@@ -125,8 +125,10 @@ typedef struct {
     audio_element_reserve_data_t reserve_data;  /*!< This value is reserved for user use (optional) */
 } audio_element_info_t;
 
+/* 44100 */
+
 #define AUDIO_ELEMENT_INFO_DEFAULT()    {   \
-    .sample_rates = 44100,                  \
+    .sample_rates = 48000,                  \
     .channels = 2,                          \
     .bits = 16,                             \
     .uri = NULL,                            \

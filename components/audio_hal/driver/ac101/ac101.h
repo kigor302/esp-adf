@@ -562,6 +562,8 @@ esp_err_t ac101_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_st
 esp_err_t ac101_config_i2s(audio_hal_codec_mode_t mode, audio_hal_codec_i2s_iface_t* iface);
 esp_err_t ac101_set_voice_volume(int volume);
 esp_err_t ac101_get_voice_volume(int* volume);
+esp_err_t ac101_set_recvoice_volume(int volume);
+esp_err_t ac101_get_recvoice_volume(int* volume);
 esp_err_t ac101_set_voice_mute(bool enable);
 esp_err_t ac101_get_voice_mute(void);
 

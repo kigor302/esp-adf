@@ -31,9 +31,9 @@
 #define BUTTON_REC_ID             GPIO_NUM_36
 #define BUTTON_MODE_ID            GPIO_NUM_13 //shared between SDCARD
 #define BUTTON_SET_ID             GPIO_NUM_19 //TOUCH_PAD_NUM9
-#define BUTTON_PLAY_ID            GPIO_NUM_23 //TOUCH_PAD_NUM8
-#define BUTTON_VOLUP_ID           GPIO_NUM_18 //TOUCH_PAD_NUM7
-#define BUTTON_VOLDOWN_ID         GPIO_NUM_5  //TOUCH_PAD_NUM4
+//#define BUTTON_PLAY_ID            GPIO_NUM_23 //TOUCH_PAD_NUM8
+//#define BUTTON_VOLUP_ID           GPIO_NUM_18 //TOUCH_PAD_NUM7
+//#define BUTTON_VOLDOWN_ID         GPIO_NUM_5  //TOUCH_PAD_NUM4
 
 //#define AUXIN_DETECT_GPIO         GPIO_NUM_12 //Not available
 #define HEADPHONE_DETCET          GPIO_NUM_39
@@ -74,7 +74,7 @@ extern audio_hal_func_t AUDIO_CODEC_AC101_DEFAULT_HANDLE;
         .user_id = INPUT_KEY_USER_ID_SET,               \
         .act_id = BUTTON_SET_ID,                        \
     },                                                  \
-    {                                                   \
+/*    {                                                   \
         .type = PERIPH_ID_BUTTON,                       \
         .user_id = INPUT_KEY_USER_ID_PLAY,              \
         .act_id = BUTTON_PLAY_ID,                       \
@@ -89,6 +89,6 @@ extern audio_hal_func_t AUDIO_CODEC_AC101_DEFAULT_HANDLE;
         .user_id = INPUT_KEY_USER_ID_VOLDOWN,           \
         .act_id = BUTTON_VOLDOWN_ID,                    \
     }                                                   \
-}
+*/}
 
 #endif
