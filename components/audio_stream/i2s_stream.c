@@ -368,3 +368,13 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
 
     return el;
 }
+
+esp_err_t i2s_get_errors(audio_element_handle_t i2s_stream, int *underun, int *overflow, int *start, int *stop)
+{
+    /* Not ready need updated IDF framework * 
+    i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(i2s_stream);
+    return (i2s)? i2s_get_error_counts(i2s->config.i2s_port, underun, overflow, start, stop): ESP_FAIL;
+    * ---------------------------- */
+    return 0;
+    /* --------------------------- */
+}

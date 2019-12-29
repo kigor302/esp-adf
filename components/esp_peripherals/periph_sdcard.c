@@ -62,6 +62,7 @@ typedef struct {
     int card_detect_pin;
     bool is_mounted;
     long long last_detect_time;
+    bool use_4lanes;
 } periph_sdcard_t;
 
 
@@ -134,7 +135,7 @@ esp_err_t periph_sdcard_mount(esp_periph_handle_t periph)
 
     periph_sdcard_t *sdcard = esp_periph_get_data(periph);
 
-    int ret = sdcard_mount(sdcard->root);
+    int ret = sdcard_mount(sdcard->root, sdcard->use_4lanes);
 
     if (ret == ESP_OK) {
         ESP_LOGD(TAG, "Mount SDCARD success");

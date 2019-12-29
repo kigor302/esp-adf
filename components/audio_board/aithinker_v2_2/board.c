@@ -80,27 +80,22 @@ display_service_handle_t audio_board_led_init(void)
 
 esp_err_t audio_board_key_init(esp_periph_set_handle_t set)
 {
+#ifndef USE_SDCARD_4LANES
     periph_button_cfg_t btn_cfg = {
         .gpio_mask = (1ULL << get_input_rec_id())   | (1ULL << get_input_mode_id()) |   // REC BTN & MODE BTN
-                     (1ULL << get_input_set_id())   /*| (1ULL << get_input_play_id()) |   // SET & PLAY
-                     (1ULL << get_input_volup_id()) | (1ULL << get_input_voldown_id())*/  // VLOUME + & VOLUME -
+                     (1ULL << get_input_set_id())   | (1ULL << get_input_play_id()) |   // SET & PLAY
+                     (1ULL << get_input_volup_id()) | (1ULL << get_input_voldown_id())  // VLOUME + & VOLUME -
     };
+#else    
+    periph_button_cfg_t btn_cfg = {
+        .gpio_mask = (1ULL << get_input_rec_id()) |  // REC 
+                     (1ULL << get_input_set_id())    // SET
+    };
+#endif    
     esp_periph_handle_t button_handle = periph_button_init(&btn_cfg);
     AUDIO_NULL_CHECK(TAG, button_handle, return ESP_ERR_ADF_MEMORY_LACK);
     esp_err_t ret = ESP_OK;
     ret = esp_periph_start(set, button_handle);
-    /* IGOR  N/A
-    if (ret != ESP_OK) {
-        return ret;
-    }
-    periph_touch_cfg_t touch_cfg = {
-        .touch_mask = TOUCH_PAD_SEL4 | TOUCH_PAD_SEL7 | TOUCH_PAD_SEL8 | TOUCH_PAD_SEL9,
-        .tap_threshold_percent = 70,
-    };
-    esp_periph_handle_t touch_periph = periph_touch_init(&touch_cfg);
-    AUDIO_NULL_CHECK(TAG, touch_periph, return ESP_ERR_ADF_MEMORY_LACK);
-    ret = esp_periph_start(set, touch_periph);
-    */
     return ret;
 }
 
@@ -109,6 +104,9 @@ esp_err_t audio_board_sdcard_init(esp_periph_set_handle_t set)
     periph_sdcard_cfg_t sdcard_cfg = {
         .root = "/sdcard",
         .card_detect_pin = get_sdcard_intr_gpio(), // GPIO_NUM_34
+#ifdef USE_SDCARD_4LANES
+        .use_4lanes = true,
+#endif 
     };
     esp_periph_handle_t sdcard_handle = periph_sdcard_init(&sdcard_cfg);
     esp_err_t ret = esp_periph_start(set, sdcard_handle);

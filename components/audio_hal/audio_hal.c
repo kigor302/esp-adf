@@ -135,23 +135,25 @@ esp_err_t audio_hal_get_volume(audio_hal_handle_t audio_hal, int *volume)
     return ret;
 }
 
-esp_err_t audio_hal_set_recvolume(audio_hal_handle_t audio_hal, int volume)
+esp_err_t audio_hal_set_volume_ex(audio_hal_handle_t audio_hal, int volume, audio_hal_volume_src_t src, audio_hal_volume_channel_t ch)
 {
     esp_err_t ret;
     AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
+    AUDIO_HAL_CHECK_NULL(audio_hal->audio_codec_set_volume_ex, "This function not implemented in codec", -1);
     mutex_lock(audio_hal->audio_hal_lock);
-    ret = audio_hal->audio_codec_set_recvolume(volume);
+    ret = audio_hal->audio_codec_set_volume_ex(volume, src, ch);
     mutex_unlock(audio_hal->audio_hal_lock);
     return ret;
 }
 
-esp_err_t audio_hal_get_recvolume(audio_hal_handle_t audio_hal, int *volume)
+esp_err_t audio_hal_get_volume_ex(audio_hal_handle_t audio_hal, int *volume, audio_hal_volume_src_t src, audio_hal_volume_channel_t ch)
 {
     esp_err_t ret;
     AUDIO_HAL_CHECK_NULL(audio_hal, "audio_hal handle is null", -1);
     AUDIO_HAL_CHECK_NULL(volume, "Get volume para is null", -1);
+    AUDIO_HAL_CHECK_NULL(audio_hal->audio_codec_get_volume_ex, "This function not implemented in codec", -1);
     mutex_lock(audio_hal->audio_hal_lock);
-    ret = audio_hal->audio_codec_get_recvolume(volume);
+    ret = audio_hal->audio_codec_get_volume_ex(volume, src, ch);
     mutex_unlock(audio_hal->audio_hal_lock);
     return ret;
 }

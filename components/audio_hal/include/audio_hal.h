@@ -45,7 +45,8 @@ typedef enum {
     AUDIO_HAL_CODEC_MODE_DECODE,      /*!< select dac */
     AUDIO_HAL_CODEC_MODE_BOTH,        /*!< select both adc and dac */
     AUDIO_HAL_CODEC_MODE_LINE_IN,     /*!< set adc channel */
-    AUDIO_HAL_CODEC_MODE_PASSTHROUGH, /*!< set adc channel */
+    AUDIO_HAL_CODEC_MODE_PASSTHROUGH, /*!< enable ADC to DAC passthrough */
+    AUDIO_HAL_CODEC_MODE_RECORD_MIX,  /*!< select record mixer (ADC + DAC) */
 
 } audio_hal_codec_mode_t;
 
@@ -120,6 +121,27 @@ typedef enum {
 } audio_hal_iface_format_t;
 
 /**
+ * @brief Select volume control source
+ */
+typedef enum {
+    AUDIO_HAL_VOL_OUT_DAC = 0,    /*!< DAC gain source (digital gain) */
+    AUDIO_HAL_VOL_IN_ADC,         /*!< ADC gain source (digital gain) */
+    AUDIO_HAL_VOL_IN_LINEIN,      /*!< Line in gain (analog gain)*/
+    AUDIO_HAL_VOL_IN_MIC,         /*!< Microphone gain (analog gain) */
+    AUDIO_HAL_VOL_OUT_HEADPHONE,  /*!< headphone gain souce (analog gain) */
+    AUDIO_HAL_VOL_OUT_SPK,        /*!< speaker gain source (analog gain) */
+} audio_hal_volume_src_t;
+
+/**
+ * @brief Select volume control channel
+ */
+typedef enum {
+    AUDIO_HAL_VOL_CHANNEL_BOTH = 0, /* !< Both channels */
+    AUDIO_HAL_VOL_CHANNEL_LEFT,     /*!< DAC gain source (digital gain) */
+    AUDIO_HAL_VOL_CHANNEL_RIGHT,    /*!< ADC gain source (digital gain) */
+}audio_hal_volume_channel_t;
+
+/**
  * @brief I2s interface configuration for audio codec chip
  */
 typedef struct {
@@ -150,8 +172,8 @@ typedef struct audio_hal {
     esp_err_t (*audio_codec_set_mute) (bool mute);                                                           /*!< set codec mute */
     esp_err_t (*audio_codec_set_volume)(int volume);                                                         /*!< set codec volume */
     esp_err_t (*audio_codec_get_volume)(int *volume);                                                        /*!< get codec volume */
-    esp_err_t (*audio_codec_set_recvolume)(int volume);                                                         /*!< set codec volume */
-    esp_err_t (*audio_codec_get_recvolume)(int *volume);                                                        /*!< get codec volume */
+    esp_err_t (*audio_codec_set_volume_ex)(int volume, audio_hal_volume_src_t src, audio_hal_volume_channel_t ch);  /*!< set specific source volume */
+    esp_err_t (*audio_codec_get_volume_ex)(int *volume, audio_hal_volume_src_t src, audio_hal_volume_channel_t ch); /*!< get specific source volume */
     xSemaphoreHandle audio_hal_lock;                                                                         /*!< semaphore of codec */
     void *handle;                                                                                            /*!< handle of audio codec */
 } audio_hal_func_t;
@@ -236,26 +258,30 @@ esp_err_t audio_hal_set_volume(audio_hal_handle_t audio_hal, int volume);
 esp_err_t audio_hal_get_volume(audio_hal_handle_t audio_hal, int *volume);
 
 /**
- * @brief Set record voice volume.
+ * @brief Set specific source gain volume.
  *        @note if volume is 0, mute is enabled,range is 0-100.
  *
  * @param audio_hal reference function pointer for selected audio codec
  * @param volume value of volume in percent(%)
+ * @param src specific source element to set volume
+ * @param ch channel to set the gain
  *
  * @return     int, 0--success, others--fail
  */
-esp_err_t audio_hal_set_recvolume(audio_hal_handle_t audio_hal, int volume);
+esp_err_t audio_hal_set_volume_ex(audio_hal_handle_t audio_hal, int volume, audio_hal_volume_src_t src, audio_hal_volume_channel_t ch);
 
 /**
- * @brief get record voice volume.
+ * @brief get specific source gain volume.
  *        @note if volume is 0, mute is enabled, range is 0-100.
  *
  * @param audio_hal reference function pointer for selected audio codec
  * @param volume value of volume in percent returned(%)
+ * @param src specific source element to get volume
+ * @param ch channel to get the gain
  *
  * @return     int, 0--success, others--fail
  */
-esp_err_t audio_hal_get_recvolume(audio_hal_handle_t audio_hal, int *volume);
+esp_err_t audio_hal_get_volume_ex(audio_hal_handle_t audio_hal, int *volume, audio_hal_volume_src_t src, audio_hal_volume_channel_t ch);
 
 #ifdef __cplusplus
 }

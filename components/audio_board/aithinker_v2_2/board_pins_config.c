@@ -103,7 +103,6 @@ esp_err_t i2s_mclk_gpio_select(i2s_port_t i2s_num, gpio_num_t gpio_num)
 }
 
 // sdcard
-
 int8_t get_sdcard_intr_gpio(void)
 {
     return SDCARD_INTR_GPIO;
@@ -115,7 +114,6 @@ int8_t get_sdcard_open_file_num_max(void)
 }
 
 // input-output pins
-
 int8_t get_headphone_detect_gpio(void)
 {
     return HEADPHONE_DETCET;
@@ -127,15 +125,9 @@ int8_t get_pa_enable_gpio(void)
 }
 
 // button pins
-
 int8_t get_input_rec_id(void)
 {
     return BUTTON_REC_ID;
-}
-
-int8_t get_input_mode_id(void)
-{
-    return BUTTON_MODE_ID;
 }
 
 int8_t get_input_set_id(void)
@@ -143,7 +135,13 @@ int8_t get_input_set_id(void)
     return BUTTON_SET_ID;
 }
 
-/*
+#ifndef USE_SDCARD_4LANES
+
+int8_t get_input_mode_id(void)
+{
+    return BUTTON_MODE_ID;
+}
+
 int8_t get_input_play_id(void)
 {
     return BUTTON_PLAY_ID;
@@ -158,10 +156,9 @@ int8_t get_input_voldown_id(void)
 {
     return BUTTON_VOLDOWN_ID;
 }
-*/
+#endif
 
 // led pins
-
 int8_t get_green_led_gpio(void)
 {
     return GREEN_LED_GPIO;

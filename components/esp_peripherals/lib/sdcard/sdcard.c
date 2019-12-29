@@ -53,26 +53,24 @@ static void sdmmc_card_print_info(const sdmmc_card_t *card)
     ESP_LOGD(TAG, "SCR: sd_spec=%d, bus_width=%d\n", card->scr.sd_spec, card->scr.bus_width);
 }
 
-esp_err_t sdcard_mount(const char *base_path)
+esp_err_t sdcard_mount(const char *base_path, bool use_4lanes)
 {
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-    // To use 1-line SD mode, uncomment the following line:
-    
-    /* !!!!!! IGOR !!!!! */ 
-    host.flags = /*SDMMC_HOST_FLAG_1BIT;*/ SDMMC_HOST_FLAG_4BIT;
-    /*!!!!!!!!!!*/
+    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+
+    if (!use_4lanes) {
+        // To use 1-line SD mode, uncomment the following line:
+        host.flags = SDMMC_HOST_FLAG_1BIT;
+        slot_config.width = 1;
+    }
 
     host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
     slot_config.gpio_cd = g_gpio;
-    
-    /* !!!!!! IGOR
-    slot_config.width = 1;
-     !!!!!!!*/
 
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
-        .max_files = get_sdcard_open_file_num_max()
+        .max_files = get_sdcard_open_file_num_max(),
+        .allocation_unit_size = 32 * 1024 /* Use big buffer to boost performance */
     };
 
     sdmmc_card_t *card;

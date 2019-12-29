@@ -48,8 +48,8 @@ audio_hal_func_t AUDIO_CODEC_AC101_DEFAULT_HANDLE = {
     .audio_codec_set_mute = ac101_set_voice_mute,
     .audio_codec_set_volume = ac101_set_voice_volume,
     .audio_codec_get_volume = ac101_get_voice_volume,
-    .audio_codec_set_recvolume = ac101_set_recvoice_volume,
-    .audio_codec_get_recvolume = ac101_get_recvoice_volume
+    .audio_codec_set_volume_ex = ac101_set_voice_volume_ex,
+    .audio_codec_get_volume_ex = ac101_get_voice_volume_ex
 };
 
 
@@ -66,29 +66,6 @@ static int i2c_init()
     AC_ASSERT(res, "i2c_init error", -1);
     return res;
 }
-
-/*static esp_err_t AC101_Write_Reg(uint8_t reg, uint16_t val)
-{
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    esp_err_t ret =0;
-	uint8_t send_buff[4];
-	send_buff[0] = (AC101_ADDR << 1);
-	send_buff[1] = reg;
-	send_buff[2] = (val>>8) & 0xff;
-	send_buff[3] = val & 0xff;
-    ret |= i2c_master_start(cmd);
-    ret |= i2c_master_write(cmd, send_buff, 4, ACK_CHECK_EN);
-    ret |= i2c_master_stop(cmd);
-    ret |= i2c_master_cmd_begin(IIC_PORT, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-    if (ret)
-    {
-        ESP_LOGW(AC101_TAG, "++write_res end =%d", ret);
-    }
-    AC_ASSERT(ret, "+++ac_write_reg error", -1);
-    return ret;
-}
-*/
 
 static int ac_write_reg(uint8_t reg_add, uint16_t data)
 {
@@ -218,7 +195,7 @@ esp_err_t ac101_init(audio_hal_codec_config_t* codec_cfg)
 	res |= ac_write_reg(OMIXER_DACA_CTRL, 0xf080);/* enable analog internal DAC and mixers */
 
     //* Enable Speaker output
-	res |= ac_write_reg(SPKOUT_CTRL, 0xeabd); /* R = select mixerR, Invert, Enable. L = select mixerL, Invert, Enable. Volume = 0x1D => 0db */
+	res |= ac_write_reg(SPKOUT_CTRL, 0xeabd);     /* R = select mixerR, Invert, Enable. L = select mixerL, Invert, Enable. Volume = 0x1D => 0db */
 
     ac101_pa_power(true);
     ESP_LOGI(AC101_TAG, "ac101_init done res=%d", res);
@@ -228,23 +205,25 @@ esp_err_t ac101_init(audio_hal_codec_config_t* codec_cfg)
 
 int ac101_get_spk_volume(void)
 {
-    return  (ac_read_reg(SPKOUT_CTRL) & 0x1F) * 2;
+    return  (((ac_read_reg(SPKOUT_CTRL) & 0x1F) * 100)/32);
 }
 
 esp_err_t ac101_set_spk_volume(uint8_t volume)
 {
+	volume = ((volume * 31)/100); /* convert precentage to register value */
     uint16_t val = ac_read_reg(SPKOUT_CTRL) & ~0x1f;  
-    return  ac_write_reg(SPKOUT_CTRL, val | ((volume/2) & 0x1f));
+    return  ac_write_reg(SPKOUT_CTRL, val | ((volume) & 0x1f));
 }
 
 int ac101_get_earph_volume(void)
 {
     int res = ac_read_reg(HPOUT_CTRL);
-    return (res>>4) & 0x3f;
+    return (((res>>4) & 0x3f) * 100) / 64; /* convert register value to precentage */
 }
 
 esp_err_t ac101_set_earph_volume(uint8_t volume)
 {
+	volume = ((volume * 63)/100); /* convert precentage to register value */
     uint16_t val = ac_read_reg(HPOUT_CTRL) & ~(0x3f<<4);  
     return  ac_write_reg(HPOUT_CTRL, val | ((volume & 0x3f) << 4));
 }
@@ -253,10 +232,19 @@ esp_err_t ac101_set_output_mixer_gain(ac_output_mixer_gain_t gain, ac_output_mix
 {
     uint8_t shift = (source == SRC_MIC1)? 6:
                     (source == SRC_MIC2)? 3:
-                     0; /* SRC_LINEIN */
+                    0; /* SRC_LINEIN */
             
     uint16_t val = ac_read_reg(OMIXER_BST1_CTRL) & ~(0x7 << shift);
     return ac_write_reg(OMIXER_BST1_CTRL, val | ((gain & 0x7)<<shift) );
+}
+
+int ac101_get_output_mixer_gain(ac_output_mixer_source_t source)
+{
+    uint8_t shift = (source == SRC_MIC1)? 6:
+                    (source == SRC_MIC2)? 3:
+                    0; /* SRC_LINEIN */
+    uint16_t val = ac_read_reg(OMIXER_BST1_CTRL) & ~(0x7 << shift);
+    return ((val>>shift) & 0x7); 
 }
 
 esp_err_t ac101_start(ac_module_t mode)
@@ -292,7 +280,7 @@ esp_err_t ac101_start(ac_module_t mode)
     	//* Enable Speaker output
 		res |= ac_write_reg(SPKOUT_CTRL, 0xeabd);  /* R = select mixerR, Invert, Enable. L = select mixerL, Invert, Enable. Volume = 0x1D */
 		vTaskDelay(10 / portTICK_PERIOD_MS);
-		ac101_set_voice_volume(30);
+		ac101_set_voice_volume(50);
     }
     
     ESP_LOGI(AC101_TAG, "ac101_start with mode:%d res=%d", mode, res);
@@ -336,6 +324,16 @@ esp_err_t ac101_ctrl_state(audio_hal_codec_mode_t mode, audio_hal_ctrl_t ctrl_st
 			res |= ac_write_reg(DAC_MXR_GAIN, regval_gain); /* Monitor Set line-in mix gain to -6 db */
 			}
 			return res;
+
+		case AUDIO_HAL_CODEC_MODE_RECORD_MIX:
+			{
+			uint16_t regval_src  = (ac_read_reg(I2S1_MXR_SRC) & 0x00FF) | ((ctrl_state == AUDIO_HAL_CTRL_STOP)?0x2200:0xAA00);
+			uint16_t regval_gain = (ac_read_reg(I2S1_MXR_GAIN) & 0x00FF) | ((ctrl_state == AUDIO_HAL_CTRL_STOP)?0x0000:0xAA00);
+			res |= ac_write_reg(I2S1_MXR_SRC, regval_src); /* Monitor Mix line-in to output */
+			res |= ac_write_reg(I2S1_MXR_GAIN, regval_gain); /* Monitor Set line-in mix gain to -6 db */
+			}
+			return res;
+
 		default:
 			ac_mode = AC_MODULE_DAC;
 			ESP_LOGW(AC101_TAG, "Codec mode not support, default is decode mode");
@@ -414,22 +412,99 @@ esp_err_t ac101_get_voice_volume(int* volume)
 	return 0;
 }
 
-esp_err_t ac101_set_recvoice_volume(int volume)
+esp_err_t ac101_set_voice_volume_ex(int volume, audio_hal_volume_src_t src, audio_hal_volume_channel_t ch)
 {
-	if (volume > 100)
-		volume = 100;
-	if (volume < 0)
-		volume = 0;
+	if (volume > 99)
+		volume = 99;
+	if (volume < 1)
+		volume = 1;
 
-	uint16_t regval = ac_read_reg(ADC_APC_CTRL) & (~0x7700);
-	uint16_t val = (((uint8_t)volume+7)/14);
-	return ac_write_reg(ADC_APC_CTRL, regval | (val<<8) | (val<<12));
+	switch (src)
+	{
+		case  AUDIO_HAL_VOL_OUT_DAC:       /*!< DAC gain source (digital gain) */
+			{
+			uint16_t regval = ac_read_reg(DAC_VOL_CTRL);
+			if (ch == AUDIO_HAL_VOL_CHANNEL_LEFT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				ac_write_reg(DAC_VOL_CTRL, (regval = ((regval & 0x00FF) | (((volume*255)/100)<<8)))); 
+			if (ch == AUDIO_HAL_VOL_CHANNEL_RIGHT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				ac_write_reg(DAC_VOL_CTRL, (regval & 0xFF00) | ((volume*255)/100)); 
+			}
+			break;
+    	case AUDIO_HAL_VOL_IN_ADC:         /*!< ADC gain source (digital gain) */
+			{
+			uint16_t regval = ac_read_reg(ADC_APC_CTRL);
+			if (ch == AUDIO_HAL_VOL_CHANNEL_LEFT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				ac_write_reg(ADC_APC_CTRL, (regval = ((regval & 0xF8FF) | (((volume*8)/100)<<8)))); 
+			if (ch == AUDIO_HAL_VOL_CHANNEL_RIGHT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				ac_write_reg(ADC_APC_CTRL, (regval & 0x8FFF) | (((volume*8)/100)<<12)); 
+			/*
+			uint16_t regval = ac_read_reg(ADC_VOL_CTRL);
+			if (ch == AUDIO_HAL_VOL_CHANNEL_LEFT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				ac_write_reg(ADC_VOL_CTRL, (regval & 0x00FF) | (((volume*255)/100)<<8) ); 
+			if (ch == AUDIO_HAL_VOL_CHANNEL_LEFT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				ac_write_reg(ADC_VOL_CTRL, (regval & 0xFF00) | ((volume*255)/100) ); 
+			*/
+			}
+			break;
+    	case AUDIO_HAL_VOL_OUT_HEADPHONE:  /*!< headphone gain souce (analog gain) */
+			ac101_set_earph_volume(volume);
+			break;
+    	case AUDIO_HAL_VOL_OUT_SPK:        /*!< speaker gain source (analog gain) */
+			ac101_set_spk_volume(volume);
+			break;
+    	case AUDIO_HAL_VOL_IN_MIC:         /*!< Microphone gain (analog gain) */
+			if (ch == AUDIO_HAL_VOL_CHANNEL_LEFT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				ac101_set_output_mixer_gain((ac_output_mixer_gain_t)((volume*8-1)/100), SRC_MIC1);
+			if (ch == AUDIO_HAL_VOL_CHANNEL_RIGHT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				ac101_set_output_mixer_gain((ac_output_mixer_gain_t)((volume*8-1)/100), SRC_MIC2);
+			break;
+    	case AUDIO_HAL_VOL_IN_LINEIN:      /*!< Line in gain (analog gain)*/
+			ac101_set_output_mixer_gain((ac_output_mixer_gain_t)((volume*8-1)/100), SRC_LINEIN);
+			break;
+	}
+
+	return 0;
 }
 
-esp_err_t ac101_get_recvoice_volume(int* volume)
+esp_err_t ac101_get_voice_volume_ex(int* volume, audio_hal_volume_src_t src, audio_hal_volume_channel_t ch)
 {
-	uint16_t regval = ac_read_reg(ADC_APC_CTRL) & 0x7700;
-	*volume = ((regval>>8) & 0x7) * 14;
+	switch (src)
+	{
+		case  AUDIO_HAL_VOL_OUT_DAC:       /*!< DAC gain source (digital gain) */
+			{
+			uint16_t regval = ac_read_reg(DAC_VOL_CTRL);
+			if (ch == AUDIO_HAL_VOL_CHANNEL_LEFT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				*volume = ((regval >> 8) * 100)/255;
+			else if (ch == AUDIO_HAL_VOL_CHANNEL_RIGHT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				*volume = ((regval & 0xFF) * 100)/255;
+			}
+			break;
+    	case AUDIO_HAL_VOL_IN_ADC:         /*!< ADC gain source (digital gain) */
+			{
+			uint16_t regval = ac_read_reg(ADC_APC_CTRL);
+			if (ch == AUDIO_HAL_VOL_CHANNEL_LEFT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				*volume = (((regval >> 8) & 0x7) * 100)/8;
+			else if (ch == AUDIO_HAL_VOL_CHANNEL_RIGHT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				*volume = (((regval >> 12) & 0x7) * 100)/8;
+			}
+			break;
+    	case AUDIO_HAL_VOL_OUT_HEADPHONE:  /*!< headphone gain souce (analog gain) */
+			*volume = ac101_get_earph_volume();
+			break;
+    	case AUDIO_HAL_VOL_OUT_SPK:        /*!< speaker gain source (analog gain) */
+			*volume = ac101_get_spk_volume();
+			break;
+    	case AUDIO_HAL_VOL_IN_MIC:         /*!< Microphone gain (analog gain) */
+			if (ch == AUDIO_HAL_VOL_CHANNEL_LEFT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				*volume = (ac101_get_output_mixer_gain(SRC_MIC1)*100)/8;
+			else if (ch == AUDIO_HAL_VOL_CHANNEL_RIGHT || ch == AUDIO_HAL_VOL_CHANNEL_BOTH)
+				*volume = (ac101_get_output_mixer_gain(SRC_MIC2)*100)/8;
+			break;
+    	case AUDIO_HAL_VOL_IN_LINEIN:      /*!< Line in gain (analog gain)*/
+			*volume = (ac101_get_output_mixer_gain(SRC_LINEIN)*100)/8;
+			break;
+	}
+
 	return 0;
 }
 

@@ -108,7 +108,7 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
         return ESP_FAIL;
     }
     if (fatfs->type == AUDIO_STREAM_READER) {
-        fatfs->file = fopen(path, "r");
+        fatfs->file = fopen(path, "rb");
         struct stat siz =  { 0 };
         stat(path, &siz);
         info.total_bytes = siz.st_size;
@@ -120,7 +120,7 @@ static esp_err_t _fatfs_open(audio_element_handle_t self)
             }
         }
     } else if (fatfs->type == AUDIO_STREAM_WRITER) {
-        fatfs->file = fopen(path, "w+");
+        fatfs->file = fopen(path, "wb");
         fatfs->w_type =  get_type(path);
         if (fatfs->file && STREAM_TYPE_WAV == fatfs->w_type) {
             wav_header_t info = {0};
@@ -169,7 +169,7 @@ static int _fatfs_read(audio_element_handle_t self, char *buffer, int len, TickT
         audio_element_setinfo(self, &info);
     }
     int64_t end = esp_timer_get_time( );
-    if ( (end - start) > 50000 )
+    if ( (end - start) > 250000 )
     {
         ESP_LOGE(TAG, "! read took :%d usec", (int)(end - start));
     }
@@ -190,9 +190,10 @@ static int _fatfs_write(audio_element_handle_t self, char *buffer, int len, Tick
 
     int wlen =  fwrite(buffer, 1, len, fatfs->file);
     fsync(fileno(fatfs->file));
+    //int wlen = len;
     
     int64_t end = esp_timer_get_time( );
-    if ( (end - start) > 50000 )
+    if ( (end - start) > 250000 )
     {
         ESP_LOGE(TAG, "!!! write took :%d usec", (int)(end - start));
     }

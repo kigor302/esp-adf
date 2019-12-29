@@ -52,6 +52,7 @@ typedef enum  {
 typedef struct {
     int card_detect_pin;    /*!< Card detect gpio number */
     const char* root;       /*!< Base path for vfs */
+    bool use_4lanes;        /*!< Is sdcard use 4 data lanes instead of 1 */
 } periph_sdcard_cfg_t;
 
 

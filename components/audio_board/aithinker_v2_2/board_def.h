@@ -25,16 +25,22 @@
 #ifndef _AUDIO_BOARD_DEFINITION_H_
 #define _AUDIO_BOARD_DEFINITION_H_
 
+#define USE_SDCARD_4LANES /* <============ Comment it if you use 6 key-button board intead of 4 lane SDCARD */
+
 #define SDCARD_OPEN_FILE_NUM_MAX  5
 #define SDCARD_INTR_GPIO          GPIO_NUM_34
 
 #define BUTTON_REC_ID             GPIO_NUM_36
-#define BUTTON_MODE_ID            GPIO_NUM_13 //shared between SDCARD
-#define BUTTON_SET_ID             GPIO_NUM_19 //TOUCH_PAD_NUM9
-//#define BUTTON_PLAY_ID            GPIO_NUM_23 //TOUCH_PAD_NUM8
-//#define BUTTON_VOLUP_ID           GPIO_NUM_18 //TOUCH_PAD_NUM7
-//#define BUTTON_VOLDOWN_ID         GPIO_NUM_5  //TOUCH_PAD_NUM4
 
+#ifndef USE_SDCARD_4LANES
+#   define BUTTON_MODE_ID            GPIO_NUM_13 //shared between SDCARD
+#   define BUTTON_PLAY_ID            GPIO_NUM_23 //TOUCH_PAD_NUM8
+#   define BUTTON_VOLUP_ID           GPIO_NUM_18 //TOUCH_PAD_NUM7
+#   define BUTTON_VOLDOWN_ID         GPIO_NUM_5  //TOUCH_PAD_NUM4
+#endif
+
+
+#define BUTTON_SET_ID             GPIO_NUM_19 //TOUCH_PAD_NUM9
 //#define AUXIN_DETECT_GPIO         GPIO_NUM_12 //Not available
 #define HEADPHONE_DETCET          GPIO_NUM_39
 #define PA_ENABLE_GPIO            GPIO_NUM_21
@@ -56,9 +62,9 @@ extern audio_hal_func_t AUDIO_CODEC_AC101_DEFAULT_HANDLE;
         },                                              \
 };
 
-#define INPUT_KEY_NUM     6
-
-#define INPUT_KEY_DEFAULT_INFO() {                      \
+#ifndef USE_SDCARD_4LANES
+#   define INPUT_KEY_NUM     6
+#   define INPUT_KEY_DEFAULT_INFO() {                      \
      {                                                  \
         .type = PERIPH_ID_BUTTON,                       \
         .user_id = INPUT_KEY_USER_ID_REC,               \
@@ -74,7 +80,7 @@ extern audio_hal_func_t AUDIO_CODEC_AC101_DEFAULT_HANDLE;
         .user_id = INPUT_KEY_USER_ID_SET,               \
         .act_id = BUTTON_SET_ID,                        \
     },                                                  \
-/*    {                                                   \
+    {                                                   \
         .type = PERIPH_ID_BUTTON,                       \
         .user_id = INPUT_KEY_USER_ID_PLAY,              \
         .act_id = BUTTON_PLAY_ID,                       \
@@ -89,6 +95,23 @@ extern audio_hal_func_t AUDIO_CODEC_AC101_DEFAULT_HANDLE;
         .user_id = INPUT_KEY_USER_ID_VOLDOWN,           \
         .act_id = BUTTON_VOLDOWN_ID,                    \
     }                                                   \
-*/}
+}
+#else
+#   define INPUT_KEY_NUM     2
+#   define INPUT_KEY_DEFAULT_INFO() {                      \
+     {                                                  \
+        .type = PERIPH_ID_BUTTON,                       \
+        .user_id = INPUT_KEY_USER_ID_REC,               \
+        .act_id = BUTTON_REC_ID,                        \
+    },                                                  \
+    {                                                   \
+        .type = PERIPH_ID_BUTTON,                       \
+        .user_id = INPUT_KEY_USER_ID_SET,               \
+        .act_id = BUTTON_SET_ID,                        \
+    },                                                  \
+}
+#endif /* USE_SDCARD_4LANES */
 
-#endif
+
+
+#endif /* _AUDIO_BOARD_DEFINITION_H_ */

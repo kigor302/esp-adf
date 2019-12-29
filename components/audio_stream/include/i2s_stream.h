@@ -152,6 +152,19 @@ esp_err_t i2s_alc_volume_set(audio_element_handle_t i2s_stream, int volume);
  */
 esp_err_t i2s_alc_volume_get(audio_element_handle_t i2s_stream, int* volume);
 
+/**
+ * @brief      Get error counts from I2S stream
+ *
+ * @param[in]  i2s_stream   The i2s element handle
+ * @param[out] underun      Errors in tx direction (toward codec)
+ * @param[out] overflow     Errors in rx direction (from codec)
+ *
+ * @return
+ *     - ESP_OK  
+ *     - ESP_FAIL  
+ */
+esp_err_t i2s_get_errors(audio_element_handle_t i2s_stream, int *underun, int *overflow, int *start, int *stop);
+
 #ifdef __cplusplus
 }
 #endif
