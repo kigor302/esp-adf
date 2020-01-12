@@ -130,6 +130,7 @@ typedef enum {
     AUDIO_HAL_VOL_IN_MIC,         /*!< Microphone gain (analog gain) */
     AUDIO_HAL_VOL_OUT_HEADPHONE,  /*!< headphone gain souce (analog gain) */
     AUDIO_HAL_VOL_OUT_SPK,        /*!< speaker gain source (analog gain) */
+    AUDIO_HAL_VOL_IN_MICBOOST     /*!< microphone boost gain (analog gain) */
 } audio_hal_volume_src_t;
 
 /**
